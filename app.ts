@@ -26,7 +26,7 @@ app.use(errorResponse)
 
 mongoose.connect(process.env.MONGODB_URI!)
     .then(() => {
-        app.listen(process.env.PORT_NO || 5000)
+        app.listen(process.env.PORT || 5000)
     })
     .catch(e => {
         console.log(e)
