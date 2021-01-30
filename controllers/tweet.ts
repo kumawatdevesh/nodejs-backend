@@ -3,6 +3,8 @@ import { validationResult } from 'express-validator'
 import ErrorResponse from '../utils/errorResponse'
 import Tweet from '../models/tweet/tweet'
 import Verification from '../models/verification/verification'
+import Logs from '../models/logs/logs'
+import User from '../models/user/user'
 
 export const createTweet: RequestHandler = async (req, res, next) => {
 
@@ -23,10 +25,17 @@ export const createTweet: RequestHandler = async (req, res, next) => {
             createdBy
         })
 
+        const user = await User.findById({ _id: createdBy })
+
         if (role === 'user') {
 
             // if role is user create tweet 
             const createdTweet = await tweet.save()
+
+            await new Logs({
+                message: `${user?.firstName} created a tweet`,
+                user: user?._id
+            }).save()
 
             return res.json({ tweet: createdTweet })
         } else if (role === 'admin') {
@@ -40,6 +49,11 @@ export const createTweet: RequestHandler = async (req, res, next) => {
             })
 
             const createdVerification = await verification.save()
+
+            await new Logs({
+                message: `${user?.firstName} created a tweet`,
+                user: user?._id
+            }).save()
 
             return res.json({ verification: createdVerification })
         }
@@ -67,14 +81,11 @@ export const updateTweet: RequestHandler = async (req, res, next) => {
         createdBy
     }
 
+    const user = await User.findById({ _id: createdBy })
+
     try {
 
         if (role === 'user') {
-            // if role  is user 
-            // const updatedTweet = await Tweet.findByIdAndUpdate({ _id: tweetId }, { tweetDetails })
-
-            // return res.json({ tweet: updatedTweet })
-
             return next(new ErrorResponse('You do not have right to update tweet!', 401))
         } else if (role === 'admin') {
 
@@ -88,6 +99,11 @@ export const updateTweet: RequestHandler = async (req, res, next) => {
             })
 
             const createdVerification = await verification.save()
+
+            await new Logs({
+                message: `${user?.firstName} has requested for update!`,
+                user: user?._id
+            }).save()
 
             return res.json({ verification: createdVerification })
         }

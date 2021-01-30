@@ -1,8 +1,11 @@
 import express from 'express'
-import { verification } from '../controllers/verification'
+import { verification, getLogs } from '../controllers/verification'
+import { verificationValidation } from '../validation/verification'
 
 const router = express.Router()
 
-router.post('/verification/:id', verification)
+router.get('/logs', getLogs)
+
+router.post('/verification/:id', verificationValidation, verification)
 
 export default router

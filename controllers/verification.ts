@@ -3,11 +3,18 @@ import ErrorResponse from '../utils/errorResponse'
 import Verification from '../models/verification/verification'
 import User from '../models/user/user'
 import Tweet from '../models/tweet/tweet'
+import Logs from '../models/logs/logs'
 const ObjectId = require('mongodb').ObjectId;
 
 export const verification: RequestHandler = async (req, res, next) => {
 
     const verificationId = req.params.id
+
+    const { role } = req.body
+
+    if (role !== 'super admin') {
+        return next(new ErrorResponse('You are not authrozed for verification!', 502))
+    }
 
     try {
 
@@ -24,7 +31,15 @@ export const verification: RequestHandler = async (req, res, next) => {
 
                     const tweet = await new Tweet(verification['resource'])
 
+                    const user = await User.findById({ _id: tweet.createdBy })
+
                     const createdTweet = await tweet.save()
+
+                    await new Logs({
+                        message: `${user?.firstName} created a tweet`,
+                        user: user?._id
+                    }).save()
+
                     await verification.remove()
 
                     return res.json({ tweet: createdTweet })
@@ -53,7 +68,7 @@ export const verification: RequestHandler = async (req, res, next) => {
                     return next(new ErrorResponse('Couldn\'t update tweet, Please try again!', 502))
                 }
             } else if (verification.type === 'user') {
-                //  if request is update and type is tweet
+                //  if request is update and type is user
 
                 try {
                     const userDetails = verification['resource']
@@ -78,7 +93,7 @@ export const verification: RequestHandler = async (req, res, next) => {
                 try {
                     const userId = verification.resourceId
 
-                    await User.findByIdAndRemove({ _id: userId })
+                    await User.findByIdAndRemove({ _id: ObjectId(userId) })
                     await verification.remove()
 
                     return res.json({ tweet: userId })
@@ -92,7 +107,7 @@ export const verification: RequestHandler = async (req, res, next) => {
                 try {
                     const tweetId = verification.resourceId
 
-                    await Tweet.findByIdAndRemove({ _id: tweetId })
+                    await Tweet.findByIdAndRemove({ _id: ObjectId(tweetId) })
                     await verification.remove()
 
                     return res.json({ tweet: tweetId })
@@ -105,5 +120,16 @@ export const verification: RequestHandler = async (req, res, next) => {
 
     } catch (e) {
         return next(new ErrorResponse('Couldn\'t verify request, Please try again!', 502))
+    }
+}
+
+export const getLogs: RequestHandler = async (req, res, next) => {
+
+    try {
+        const logs = await Logs.find()
+
+        return res.json({ logs: logs })
+    } catch (e) {
+        return next(new ErrorResponse('Couldn\'t get logs, Please try again!', 502))
     }
 }

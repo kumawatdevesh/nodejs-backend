@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import User from '../models/user/user'
 import Verification from '../models/verification/verification'
+import Logs from '../models/logs/logs'
 
 export const signUp: RequestHandler = async (req, res, next) => {
 
@@ -30,6 +31,13 @@ export const signUp: RequestHandler = async (req, res, next) => {
                 })
 
                 const result = await user.save()
+                // log for super admin
+
+                await new Logs({
+                    message: `${result.firstName} just signed in`,
+                    user: result._id
+                }).save()
+
                 const token = jwt.sign({ user: result }, process.env.TOKEN_KEY!)
                 return res.json({ token: token })
             })
@@ -116,6 +124,13 @@ export const login: RequestHandler = async (req, res, next) => {
             if (result) {
 
                 const token = await jwt.sign({ user: user }, `${process.env.TOKEN_KEY!}`)
+
+                // logs foo super admin
+                await new Logs({
+                    message: `${user.firstName} just signed in`,
+                    user: user._id
+                }).save()
+
                 return res.json({ token: token })
 
             } else if (err) {
